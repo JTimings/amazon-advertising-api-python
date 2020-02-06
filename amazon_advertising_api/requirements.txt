@@ -1,1 +1,2 @@
 six
+simplejson==3.17.0
