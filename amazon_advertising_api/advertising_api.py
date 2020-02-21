@@ -271,6 +271,11 @@ class AdvertisingApi(object):
         interface = 'campaigns'
         return self._operation(interface, data, method='PUT')
 
+    def update_campaigns_sb(self, data):
+        interface = 'sb/campaigns'
+        return self._operation(interface, data, method='PUT', ignore_version=True)
+
+
     def archive_campaign(self, campaign_id):
         """
         Sets the campaign status to archived. This same operation can be
@@ -916,6 +921,10 @@ class AdvertisingApi(object):
         interface = 'keywords'
         return self._operation(interface, data, method='PUT')
 
+    def update_biddable_keywords_sb(self, data):
+        interface = 'sb/keywords'
+        return self._operation(interface, data, method='PUT', ignore_version=True)
+
     def archive_biddable_keyword(self, keyword_id):
         interface = 'keywords/{}'.format(keyword_id)
         return self._operation(interface, method='DELETE')
@@ -1101,6 +1110,81 @@ class AdvertisingApi(object):
 
         return self._operation(interface, data, method='POST')
 
+    def get_sb_keyword_bid_recommendations(self, campaign_id, keywords):
+        interface = 'recommendations/bids'
+
+        data = {
+            'campaignId': campaign_id,
+            'keywords': keywords
+        }
+
+        return self._operation(interface, data, method='POST')
+
+    def get_sb_target_bid_recommendations(self, campaign_id, keywords):
+        interface = 'recommendations/bids'
+
+        data = {
+            'campaignId': campaign_id,
+            'targets': keywords
+        }
+
+        return self._operation(interface, data, method='POST')
+
+    def get_bid_recommendations(self, expressions, keywords):
+        """
+        Request bid recommendations for:
+        * a list of up to 100 targets
+        Keywords Example
+        {
+          "expressions": [
+            [
+              {
+                "type": "queryExactMatches",
+                "value": "oranges"
+              }
+            ]
+          ],
+          "adGroupId": 217706707887211
+        }
+
+        Auto Example
+        {
+          "expressions": [
+            [
+              {
+                "type": "queryBroadRelMatches",
+                "value": "apples"
+              }
+            ]
+          ],
+          "adGroupId": 163368712670649
+        }
+
+        {
+          "expressions": [
+            [
+              {
+                "type": "asinCategorySameAs",
+                "value": "166099011"
+              },
+              {
+                "type": "asinReviewRatingBetween",
+                "value": "4.5-5"
+              }
+            ]
+          ],
+          "adGroupId": 163368712670649
+        }
+        """
+        interface = 'targets/bidRecommendations'
+
+        data = {
+            'adGroupId': ad_group_id,
+            'expressions': expressions
+        }
+
+        return self._operation(interface, data, method='POST')
+
     def _download(self, location):
         headers = {'Authorization': 'Bearer {}'.format(self._access_token),
                    'Content-Type': 'application/json',
@@ -1140,7 +1224,7 @@ class AdvertisingApi(object):
                     'code': e.code,
                     'response': '{msg}: {details}'.format(msg=e.msg, details=e.read())}
 
-    def _operation(self, interface, params=None, method='GET'):
+    def _operation(self, interface, params=None, method='GET', ignore_version=False):
         """
         Makes that actual API call.
 
@@ -1180,19 +1264,30 @@ class AdvertisingApi(object):
             else:
                 p = ''
 
-            url = 'https://{host}/{api_version}/{interface}{params}'.format(
-                host=self.endpoint,
-                api_version=self.api_version,
-                interface=interface,
-                params=p)
+            if ignore_version:
+                url = 'https://{host}/{interface}{params}'.format(
+                    host=self.endpoint,
+                    interface=interface,
+                    params=p)
+            else:
+                url = 'https://{host}/{api_version}/{interface}{params}'.format(
+                    host=self.endpoint,
+                    api_version=self.api_version,
+                    interface=interface,
+                    params=p)
         else:
             if params is not None:
                 data = json.dumps(params).encode('utf-8')
 
-            url = 'https://{host}/{api_version}/{interface}'.format(
-                host=self.endpoint,
-                api_version=self.api_version,
-                interface=interface)
+            if ignore_version:
+                url = 'https://{host}/{interface}'.format(
+                    host=self.endpoint,
+                    interface=interface)
+            else:
+                url = 'https://{host}/{api_version}/{interface}'.format(
+                    host=self.endpoint,
+                    api_version=self.api_version,
+                    interface=interface)
 
         if PYTHON == 3:
             req = urllib.request.Request(url=url, headers=headers, data=data)
