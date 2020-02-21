@@ -11,7 +11,10 @@ except ImportError:
     from six.moves import urllib
     PYTHON = 2
 import gzip
-import simplejson as json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 class AdvertisingApi(object):
