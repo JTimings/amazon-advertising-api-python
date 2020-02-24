@@ -18,8 +18,13 @@ except ImportError:
 
 
 class AdvertisingApi(object):
-
+    
     """Lightweight client library for Amazon Sponsored Products API."""
+
+    v3_campaign_types = {
+        'sb': 'sponsoredBrands',
+        'sd': 'sponsoredDisplays',
+    }
 
     def __init__(self,
                  client_id,
@@ -66,6 +71,10 @@ class AdvertisingApi(object):
             self.token_url = regions[region]['token_url']
         else:
             raise KeyError('Region {} not found in regions.'.format(region))
+    
+    @classmethod
+    def has_version(cls, campaign_type):
+        return campaign_type in cls.v3_campaign_types
 
     @property
     def access_token(self):
@@ -327,7 +336,8 @@ class AdvertisingApi(object):
             :401: Unauthorized
         """
         interface = '{}/campaigns' .format(campaign_type)
-        return self._operation(interface, data)
+        ignore_version = self.has_version(campaign_type)
+        return self._operation(interface, data, ignore_version=ignore_version)
 
     def list_campaigns_ex(self, data=None, campaign_type='sp'):
         """
@@ -343,7 +353,8 @@ class AdvertisingApi(object):
         :type data: JSON string
         """
         interface = '{}/campaigns/extended' .format(campaign_type)
-        return self._operation(interface, data)
+        ignore_version = self.has_version(campaign_type)
+        return self._operation(interface, data, ignore_version=ignore_version)
 
     def get_ad_group(self, ad_group_id):
         """
