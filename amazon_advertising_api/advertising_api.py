@@ -262,7 +262,7 @@ class AdvertisingApi(object):
         interface = 'campaigns'
         return self._operation(interface, data, method='POST')
 
-    def update_campaigns(self, data):
+    def update_campaigns(self, data, campaign_type='sp'):
         """
         Updates one or more campaigns.  Campaigns are identified using their
         **campaignIds**.
@@ -277,8 +277,14 @@ class AdvertisingApi(object):
                 input
             :401: Unauthorized
         """
-        interface = 'campaigns'
-        return self._operation(interface, data, method='PUT')
+
+        ignore_version = self.has_version(campaign_type)
+        if ignore_version:
+            interface = '{}/campaigns' .format(campaign_type)
+        else:
+            interface = 'campaigns'
+
+        return self._operation(interface, data, method='PUT', ignore_version=ignore_version)
 
     def update_campaigns_sb(self, data):
         interface = 'sb/campaigns'
