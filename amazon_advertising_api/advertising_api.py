@@ -1259,7 +1259,7 @@ class AdvertisingApi(object):
 
         headers = {'Authorization': 'Bearer {}'.format(self._access_token),
                    'Amazon-Advertising-API-ClientId': self.client_id,
-                    'Accept': version_header,
+                   'Accept': version_header,
                    'Content-Type': version_header,
                    'User-Agent': self.user_agent}
 
