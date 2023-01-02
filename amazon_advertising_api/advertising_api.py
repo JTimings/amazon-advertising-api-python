@@ -1241,7 +1241,7 @@ class AdvertisingApi(object):
                     'code': e.code,
                     'response': '{msg}: {details}'.format(msg=e.msg, details=e.read())}
 
-    def _operation(self, interface, params=None, method='GET', ignore_version=False, version_header='application/json'):
+    def _operation(self, interface, params=None, method='GET', ignore_version=False, content_type_header='application/json', accept_header=False):
         """
         Makes that actual API call.
 
@@ -1259,9 +1259,10 @@ class AdvertisingApi(object):
 
         headers = {'Authorization': 'Bearer {}'.format(self._access_token),
                    'Amazon-Advertising-API-ClientId': self.client_id,
-                   'Accept': version_header,
-                   'Content-Type': version_header,
+                   'Content-Type': content_type_header,
                    'User-Agent': self.user_agent}
+        if accept_header:
+            headers['Accept'] = accept_header
 
         if self.sandbox:
             headers['BIDDING_CONTROLS_ON'] = 'true'
