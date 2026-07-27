@@ -187,21 +187,40 @@ class AdvertisingApi(object):
         interface = 'profiles'
         return self._operation(interface, data, method='PUT')
 
+    # Portfolios use the unversioned v3 endpoints: Amazon removed
+    # /v2/portfolios (404 "Method Not Found"). The schema version is carried
+    # in the content type, the collection is wrapped in a "portfolios" key,
+    # and responses are multi-status: {"portfolios": {"success": [], "error": []}}.
+    PORTFOLIO_SCHEMA = 'application/vnd.spPortfolio.v3+json'
+
     def list_portfolios(self, data=None):
-        interface = 'portfolios'
-        return self._operation(interface, data)
+        interface = 'portfolios/list'
+        return self._operation(interface, data or {}, method='POST',
+                               ignore_version=True,
+                               content_type_header=self.PORTFOLIO_SCHEMA,
+                               accept_header=self.PORTFOLIO_SCHEMA)
 
     def get_portfolio(self, portfolio_id):
-        interface = 'portfolios/{}'. format(portfolio_id)
-        return self._operation(interface)
+        interface = 'portfolios/list'
+        body = {'portfolioIdFilter': {'include': [str(portfolio_id)]}}
+        return self._operation(interface, body, method='POST',
+                               ignore_version=True,
+                               content_type_header=self.PORTFOLIO_SCHEMA,
+                               accept_header=self.PORTFOLIO_SCHEMA)
 
     def create_portfolios(self, data):
         interface = 'portfolios'
-        return self._operation(interface, data, method='POST')
+        return self._operation(interface, {'portfolios': data}, method='POST',
+                               ignore_version=True,
+                               content_type_header=self.PORTFOLIO_SCHEMA,
+                               accept_header=self.PORTFOLIO_SCHEMA)
 
     def update_portfolios(self, data):
         interface = 'portfolios'
-        return self._operation(interface, data, method='PUT')
+        return self._operation(interface, {'portfolios': data}, method='PUT',
+                               ignore_version=True,
+                               content_type_header=self.PORTFOLIO_SCHEMA,
+                               accept_header=self.PORTFOLIO_SCHEMA)
 
     def get_campaign(self, campaign_id, campaign_type='sp'):
         """
@@ -1241,7 +1260,8 @@ class AdvertisingApi(object):
                     'code': e.code,
                     'response': '{msg}: {details}'.format(msg=e.msg, details=e.read())}
 
-    def _operation(self, interface, params=None, method='GET', ignore_version=False):
+    def _operation(self, interface, params=None, method='GET', ignore_version=False,
+                   content_type_header='application/json', accept_header=None):
         """
         Makes that actual API call.
 
@@ -1251,6 +1271,12 @@ class AdvertisingApi(object):
         :type params: GET: string POST: dictionary
         :param method: Call method. Should be either 'GET', 'PUT', or 'POST'
         :type method: string
+        :param content_type_header: Content-Type for the request. Newer
+            endpoints version their schema through it
+            (e.g. application/vnd.spPortfolio.v3+json).
+        :type content_type_header: string
+        :param accept_header: Accept header; omitted when None.
+        :type accept_header: string
         """
         if self._access_token is None:
             return {'success': False,
@@ -1259,8 +1285,10 @@ class AdvertisingApi(object):
 
         headers = {'Authorization': 'Bearer {}'.format(self._access_token),
                    'Amazon-Advertising-API-ClientId': self.client_id,
-                   'Content-Type': 'application/json',
+                   'Content-Type': content_type_header,
                    'User-Agent': self.user_agent}
+        if accept_header:
+            headers['Accept'] = accept_header
 
         if self.sandbox:
             headers['BIDDING_CONTROLS_ON'] = 'true'
